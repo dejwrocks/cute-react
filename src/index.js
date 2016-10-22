@@ -83,6 +83,8 @@ function update(prevElement, nextElement) {
   if (prevElement.tag === nextElement.tag) {
     if (typeof prevElement.tag === "string") {
       updateVElement(prevElement, nextElement);
+    } else if (typeof prevElement.tag === "function") {
+      updateVComponent(prevElement, nextElement);
     }
   } else {
 
@@ -109,6 +111,25 @@ function updateVText(prevText, nextText, parentDOMNode) {
   }
 }
 
+function updateVComponent(prevComponent, nextComponent) {
+  const { _instance } = prevComponent;
+  const { _currentElement } = _instance;
+
+  const prevProps = prevComponent.props;
+  const nextProps = nextComponent.props;
+
+  nextComponent.dom = prevComponent.dom;
+  nextComponent._instance = _instance;
+  nextComponent._instance.props = nextProps;
+
+  const prevRenderedElement = _currentElement;
+  const nextRenderedElement = _instance.render();
+
+  nextComponent._instance._currentElement = nextRenderedElement;
+
+  update(prevRenderedElement, nextRenderedElement, _instance._parentNode);
+}
+
 function updateChildren(prevChildren, nextChildren, parentDOMNode) {
   if (!Array.isArray(nextChildren)) {
     nextChildren = [nextChildren];
@@ -117,7 +138,7 @@ function updateChildren(prevChildren, nextChildren, parentDOMNode) {
     prevChildren = [prevChildren];
   }
 
-  for (let i = 0; i < nextChildren.length; i++) {
+  for (let i = 0, length = nextChildren.length; i < length; i++) {
     const nextChild = nextChildren[i];
     const prevChild = prevChildren[i];
 
@@ -132,8 +153,8 @@ function updateChildren(prevChildren, nextChildren, parentDOMNode) {
 
 function mountVComponent(vComponent, parentDOMNode) {
   const { tag, props } = vComponent;
-  const Component = tag;
-  const instance = new Component(props);
+  const componentClass = tag;
+  const instance = new componentClass(props);
   const nextRenderedElement = instance.render();
   instance._currentElement = nextRenderedElement;
   instance._parentNode = parentDOMNode;
