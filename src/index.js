@@ -35,6 +35,16 @@ class Component {
   }
 }
 
+class NestedApp extends Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
+    return createElement("h1", { style: { color: "Red"} }, `count: ${this.props.counter}`);
+  }
+}
+
 class App extends Component {
   constructor() {
     super();
@@ -43,12 +53,15 @@ class App extends Component {
     };
 
     setInterval(() => {
-      // this.setState({ counter: this.state.counter + 1 });
+      this.setState({ counter: this.state.counter + 1 });
     }, 1000);
   }
   render() {
-    return createElement('div', { style: { height: `${10 * this.state.counter}px`, background: 'red'} }, [
-      createElement('h1', {}, [ this.state.counter ])
+    const { counter} = this.state;
+    return createElement("div", { style: { height : `${10 * counter}px`, background: "green"}}, [
+      `counter is ${counter}`,
+      createElement("h1", { style: { color: "blue"}}, [ `counter2 is : ${counter}`]),
+      createElement(NestedApp, { counter: counter })
     ]);
   }
 }
@@ -79,10 +92,41 @@ function update(prevElement, nextElement) {
 function updateVElement(prevElement, nextElement) {
   const dom = prevElement.dom;
   nextElement.dom = dom;
+
+  if (nextElement.props.children) {
+    updateChildren(prevElement.props.children, nextElement.props.children, dom);
+  }
   
   const nextStyle = nextElement.style;
   if (prevElement.style !== nextStyle) {
     Object.keys(nextStyle).forEach(s => dom.style[s] = nextStyle[s]);
+  }
+}
+
+function updateVText(prevText, nextText, parentDOMNode) {
+  if (prevText !== nextText) {
+    parentDOMNode.firstChild.nodeValue = nextText;
+  }
+}
+
+function updateChildren(prevChildren, nextChildren, parentDOMNode) {
+  if (!Array.isArray(nextChildren)) {
+    nextChildren = [nextChildren];
+  }
+  if (!Array.isArray(prevChildren)) {
+    prevChildren = [prevChildren];
+  }
+
+  for (let i = 0; i < nextChildren.length; i++) {
+    const nextChild = nextChildren[i];
+    const prevChild = prevChildren[i];
+
+    if (typeof nextChild === "string" && typeof prevChild === "string") {
+      updateVText(prevChild, nextChild, parentDOMNode);
+      continue;
+    } else {
+      update(prevChild, nextChild);
+    }
   }
 }
 
@@ -146,9 +190,13 @@ function mountVElement(vElement, parentDOMNode) {
   vElement.dom = domNode;
 
   if (props.children) {
-    props.children.forEach(child => {
-      mount(child, domNode);
-    });
+    if (!Array.isArray(props.children)) {
+      mount(props.children, domNode);
+    } else {
+      props.children.forEach(child => {
+        mount(child, domNode);
+      });
+    }
   }
 
   if (typeof className !== "undefined") {
