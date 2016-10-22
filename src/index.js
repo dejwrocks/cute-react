@@ -1,6 +1,5 @@
 const root = document.body;
 
-
 class Component {
   constructor(props) {
     this.props = props || {};
@@ -20,19 +19,15 @@ class Component {
     }
 
     this._pendingState = null;
-    const nextRenderedElement = this.render();
-    this._currentElement = nextRenderedElement;
+    const nextElement = this.render();
+    this._currentElement = nextElement;
 
-    mount(nextRenderedElement, this._parentNode);
-  }
-
-  updateComponent() {
-    
+    update(prevElement, nextElement, this._parentNode);
   }
 
   setState(partialNewState) {
-    const newState = Object.assign({}, this.state, partialNewState);
-    this.state = newState;
+    this._pendingState = Object.assign({}, this.state, partialNewState);
+    this.updateComponent();
   }
 
   render() {
@@ -41,15 +36,24 @@ class Component {
 }
 
 class App extends Component {
+  constructor() {
+    super();
+    this.state = {
+      counter: 1
+    };
+
+    setInterval(() => {
+      // this.setState({ counter: this.state.counter + 1 });
+    }, 1000);
+  }
   render() {
-    return createElement('div', { style: { height: '100px', background: 'red'} }, [
-      createElement('h1', {}, [ this.props.message ])
+    return createElement('div', { style: { height: `${10 * this.state.counter}px`, background: 'red'} }, [
+      createElement('h1', {}, [ this.state.counter ])
     ]);
   }
 }
 
-const app = mount(createElement(App, {message: "lvwei"}), root);
-
+const app = createElement(App, {message: "lvwei"});
 mount(app, root);
 
 function mount(input, parentDOMNode) {
@@ -59,6 +63,26 @@ function mount(input, parentDOMNode) {
     return mountVComponent(input, parentDOMNode);
   } else if (typeof input.tag === "string") {
     return mountVElement(input, parentDOMNode);
+  }
+}
+
+function update(prevElement, nextElement) {
+  if (prevElement.tag === nextElement.tag) {
+    if (typeof prevElement.tag === "string") {
+      updateVElement(prevElement, nextElement);
+    }
+  } else {
+
+  }
+}
+
+function updateVElement(prevElement, nextElement) {
+  const dom = prevElement.dom;
+  nextElement.dom = dom;
+  
+  const nextStyle = nextElement.style;
+  if (prevElement.style !== nextStyle) {
+    Object.keys(nextStyle).forEach(s => dom.style[s] = nextStyle[s]);
   }
 }
 
