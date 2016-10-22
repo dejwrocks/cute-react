@@ -1,1 +1,1 @@
-## simple re-implementation of "react mode"
+# simple re-implementation of "react style"
